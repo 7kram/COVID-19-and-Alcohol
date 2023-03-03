@@ -1,0 +1,335 @@
+---
+title: "Effects of COVID-19 on Alcohol Sales"
+author: 'Akram Nour'
+date: '2022-06-09'
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(ggplot2)
+library(gridExtra)
+library(prettydoc)
+library(DT)
+library(knitr)
+library(kableExtra)
+library(pander)
+library(lubridate)
+
+load("final_data.RData")
+load("iowa_accidents.RData")
+```
+
+## 1A 2016
+
+I set up a summary for the data where I was able to spot 11 NA values for 'category'.
+I then used lapply to remove those NA values, making the data frame easier to analyze.
+I renamed the columns as well.
+I converted retail price and sale amount to numeric so it would be easier for me to analyze.
+Lastly, I removed all factors.
+
+```{r}
+summary(yr2016)
+
+lapply(names(yr2016), function(i) round(prop.table(table(is.na(yr2016[i]), dnn = i)), digit = 2))
+yr2016 <- yr2016[complete.cases(yr2016), ]
+
+
+colnames(yr2016) <- c("invoice_or_item_number", "date","store_number","category","vendor_number","item_number","state_bottle_retail","bottles_sold","sale_in_dollars","volume_sold_in_liters", "volume_sold_in_gallons")
+colnames(yr2016)
+
+yr2016$state_bottle_retail <- as.numeric(gsub("\\$|,","",yr2016$state_bottle_retail))
+yr2016$sale_in_dollars <- as.numeric(gsub("\\$|,","",yr2016$sale_in_dollars))
+
+head(yr2016)
+
+yr2016$invoice_or_item_number <- as.character(yr2016$invoice_or_item_number)
+yr2016$store_number <- as.numeric(as.character(yr2016$store_number))
+yr2016$category <- as.numeric(as.character(yr2016$category))
+yr2016$vendor_number <- as.character(yr2016$vendor_number)
+yr2016$item_number <- as.numeric(as.character(yr2016$item_number))
+yr2016$state_bottle_retail <- as.character(yr2016$state_bottle_retail)
+yr2016$bottles_sold <- as.numeric(as.character(yr2016$bottles_sold))
+yr2016$volume_sold_in_liters <- as.numeric(as.character(yr2016$volume_sold_in_liters))
+yr2016$volume_sold_in_gallons <- as.numeric(as.character(yr2016$volume_sold_in_gallons))
+sapply(yr2016, class) |> table()
+```
+
+## 1B 2016
+
+I loaded store in order to group the data by zipcode.
+I first removed unnecessary columns from the data and then incorporated zipcode to the yr data set.
+
+```{r}
+load("Store.RData")
+store <- store[ -c(2,3,4,6)]
+colnames(store) <- c("store_number", "zipcode")
+
+yr2016 <- merge(yr2016, store, by="store_number")
+```
+
+I extracted the top ten zipcodes that appeared in the dataset
+
+```{r}
+tail(names(sort(table(yr2016$zipcode))), 10)
+
+```
+
+I then extracted the top ten zipcodes with the highest amount in sales
+
+```{r}
+topsales2016 <- sort(tapply(yr2016$sale_in_dollars, yr2016$zipcode, sum), decreasing = TRUE)
+head(topsales2016, n = 10)
+
+```
+
+Finally, I used the same code but switched the function from sum to median to find the top ten zipcodes for median sale amount
+
+```{r}
+topmediansales2016 <- sort(tapply(yr2016$sale_in_dollars, yr2016$zipcode, median), decreasing = TRUE)
+head(topmediansales2016, n = 10)
+```
+
+## 1A 2018
+
+I set up a summary for the data where I was able to spot 11 NA values for 'category'.
+I then used lapply to remove those NA values, making the dataframe easier to analyze.
+I renamed the columns as well.
+I converted retail price and sale amount to numeric so it would be easier for me to analyze.
+Lastly, I removed all factors.
+
+```{r}
+summary(yr2018)
+
+
+lapply(names(yr2018), function(i) round(prop.table(table(is.na(yr2018[i]), dnn = i)), digit = 2))
+yr2018 <- yr2018[complete.cases(yr2018), ]
+
+colnames(yr2018) <- c("invoice_or_item_number", "date","store_number","category","vendor_number","item_number","state_bottle_retail","bottles_sold","sale_in_dollars","volume_sold_in_liters", "volume_sold_in_gallons")
+
+head(yr2018)
+
+yr2018$state_bottle_retail <- as.numeric(gsub("\\$|,","",yr2018$state_bottle_retail))
+yr2018$sale_in_dollars <- as.numeric(gsub("\\$|,","",yr2018$sale_in_dollars))
+
+yr2018$invoice_or_item_number <- as.character(yr2018$invoice_or_item_number)
+yr2018$store_number <- as.numeric(as.character(yr2018$store_number))
+yr2018$category <- as.numeric(as.character(yr2018$category))
+yr2018$vendor_number <- as.character(yr2018$vendor_number)
+yr2018$item_number <- as.numeric(as.character(yr2018$item_number))
+yr2018$state_bottle_retail <- as.character(yr2018$state_bottle_retail)
+yr2018$bottles_sold <- as.numeric(as.character(yr2018$bottles_sold))
+yr2018$volume_sold_in_liters <- as.numeric(as.character(yr2018$volume_sold_in_liters))
+yr2018$volume_sold_in_gallons <- as.numeric(as.character(yr2018$volume_sold_in_gallons))
+sapply(yr2018, class) |> table()
+
+```
+
+## 1B 2018
+
+I incorporated zipcode from store to the yr dataset.
+
+```{r}
+yr2018 <- merge(yr2018, store, by="store_number")
+```
+
+I extracted the top ten zipcodes that appeared in the dataset
+
+```{r}
+tail(names(sort(table(yr2018$zipcode))), 10)
+
+```
+
+I then extracted the top ten zipcodes with the highest amount in sales
+
+```{r}
+topsales2018 <- sort(tapply(yr2018$sale_in_dollars, yr2018$zipcode, sum), decreasing = TRUE)
+head(topsales2018, n = 10)
+
+```
+
+Finally, I used the same code but switched the function from sum to median to find the top ten zipcodes for median sale amount
+
+```{r}
+topmediansales2018 <- sort(tapply(yr2018$sale_in_dollars, yr2018$zipcode, median), decreasing = TRUE)
+head(topmediansales2018, n = 10)
+```
+
+## 1A 2020
+
+I set up a summary for the data where I was able to spot 11 NA values for 'category'.
+I then used lapply to remove those NA values, making the data frame easier to analyze.
+I renamed the columns as well.
+I converted retail price and sale amount to numeric so it would be easier for me to analyze.
+Lastly, I removed all factors.
+
+```{r}
+summary(yr2020)
+
+lapply(names(yr2020), function(i) round(prop.table(table(is.na(yr2020[i]), dnn = i)), digit = 2))
+yr2020 <- yr2020[complete.cases(yr2020), ]
+
+colnames(yr2020) <- c("invoice_or_item_number", "date","store_number","category","vendor_number","item_number","state_bottle_retail","bottles_sold","sale_in_dollars","volume_sold_in_liters", "volume_sold_in_gallons")
+
+head(yr2020)
+
+yr2020$state_bottle_retail <- as.numeric(gsub("\\$|,","",yr2020$state_bottle_retail))
+yr2020$sale_in_dollars <- as.numeric(gsub("\\$|,","",yr2020$sale_in_dollars))
+
+yr2020$invoice_or_item_number <- as.character(yr2020$invoice_or_item_number)
+yr2020$store_number <- as.numeric(as.character(yr2020$store_number))
+yr2020$category <- as.numeric(as.character(yr2020$category))
+yr2020$vendor_number <- as.character(yr2020$vendor_number)
+yr2020$item_number <- as.numeric(as.character(yr2020$item_number))
+yr2020$state_bottle_retail <- as.character(yr2020$state_bottle_retail)
+yr2020$bottles_sold <- as.numeric(as.character(yr2020$bottles_sold))
+yr2020$volume_sold_in_liters <- as.numeric(as.character(yr2020$volume_sold_in_liters))
+yr2020$volume_sold_in_gallons <- as.numeric(as.character(yr2020$volume_sold_in_gallons))
+sapply(yr2020, class) |> table()
+
+```
+
+## 1B 2018
+
+I incorporated zip code from store to the yr data set.
+
+```{r}
+yr2020 <- merge(yr2020, store, by="store_number")
+```
+
+I extracted the top ten zip codes that appeared in the data set
+
+```{r}
+tail(names(sort(table(yr2020$zipcode))), 10)
+
+```
+
+I then extracted the top ten zip codes with the highest amount in sales
+
+```{r}
+topsales2020 <- sort(tapply(yr2020$sale_in_dollars, yr2020$zipcode, sum), decreasing = TRUE)
+head(topsales2020, n = 10)
+
+```
+
+Finally, I used the same code but switched the function from sum to median to find the top ten zip codes for median sale amount
+
+```{r}
+topmediansales2020 <- sort(tapply(yr2020$sale_in_dollars, yr2020$zipcode, median), decreasing = TRUE)
+head(topmediansales2020, n = 10)
+```
+
+## 1C
+
+```{r}
+## top sale amount
+topsales2016 <- sort(tapply(yr2016$sale_in_dollars, yr2016$zipcode, max), decreasing = TRUE)
+head(topsales2016, n = 10)
+
+topsales2018 <- sort(tapply(yr2018$sale_in_dollars, yr2018$zipcode, max), decreasing = TRUE)
+head(topsales2018, n = 10)
+
+topsales2020 <- sort(tapply(yr2020$sale_in_dollars, yr2020$zipcode, max), decreasing = TRUE)
+head(topsales2020, n = 10)
+
+##top transactions
+tail(names(sort(table(yr2016$zipcode))), 10)
+
+tail(names(sort(table(yr2018$zipcode))), 10)
+
+tail(names(sort(table(yr2020$zipcode))), 10)
+
+##top median sale amount
+topmediansales2016 <- sort(tapply(yr2016$sale_in_dollars, yr2016$zipcode, median), decreasing = TRUE)
+head(topmediansales2016, n = 10)
+
+topmediansales2018 <- sort(tapply(yr2018$sale_in_dollars, yr2018$zipcode, median), decreasing = TRUE)
+head(topmediansales2018, n = 10)
+
+topmediansales2020 <- sort(tapply(yr2020$sale_in_dollars, yr2020$zipcode, median), decreasing = TRUE)
+head(topmediansales2020, n = 10)
+
+## As we can see, after 2016 nearly all the top zipcodes in iowa doubled in top median sale amount, and top sale amount. However,in all areas 2020 displayed a decrease (lower than 2018 but still higher than 2016).
+
+```
+
+## 1C (cont.)
+
+While 2016 had the least in amount of top sales and top median sale amount, it suffered the greatest amount of drunk driving incidents.
+Interestingly, 2018 topped 2016 and 2020 in top sale and median sale amount but suffered the least amount of drunk driving incidents.
+
+```{r}
+iowa_accidents$YEAR <- as.numeric(iowa_accidents$YEAR)
+tapply(iowa_accidents$DRUNK_DR, iowa_accidents$YEAR, sum)
+```
+
+## 1D
+
+Influential in this case will be defined as 'largest in volume'.
+
+From the results, we can see that the top 5 vendors are Diageo Americas, Luxco-St Louis, Sazerac Company Inc, Pernod Ricard USA, and Jim Beam Brands
+
+```{r}
+
+load("item.RData")
+colnames(item) <- c("item_number","item_description", "vendor_number","vendor_name","pack","bottle_volume_inml","state_bottle_cost")
+vendorsin2016 <- sort(table(yr2016["vendor_number"]))
+vendorsin2018 <- sort(table(yr2018["vendor_number"]))
+vendorsin2020 <- sort(table(yr2020["vendor_number"]))
+
+tail(vendorsin2016)
+tail(vendorsin2018)
+tail(vendorsin2020)
+
+class(item$vendor_number)
+item$vendor_number <- as.numeric(item$vendor_number)
+class(item$vendor_number)
+
+
+head(item[item$vendor_number == 260, ])
+head(item[item$vendor_number == 434, ])
+head(item[item$vendor_number == 421, ])
+head(item[item$vendor_number == 370, ])
+head(item[item$vendor_number == 65, ])
+
+```
+
+## 1E
+
+tapply function is used in 1B to extract the zip codes with the top median sale amount.
+
+## 2A
+
+```{r, fig.height = 5, fig.width = 5}
+yr2016Data <- yr2016[,c(3,9,8,10)]
+plot(yr2016Data, main = "Scatterplot Matrix of Year 2016")
+
+yr2018Data <- yr2018[,c(3,9,8,10)]
+plot(yr2018Data, main = "Scatterplot Matrix of Year 2018")
+
+yr2020Data <- yr2020[,c(3,9,8,10)]
+plot(yr2020Data, main = "Scatterplot Matrix of Year 2020")
+
+set.seed(505336556)
+sample(nrow(yr2016), size = 400, replace = FALSE)
+
+set.seed(505336556)
+sample(nrow(yr2018), size = 400, replace = FALSE)
+
+set.seed(505336556)
+sample(nrow(yr2020), size = 400, replace = FALSE)
+```
+
+## 3
+
+The way I evaluated bottle sales by year in Iowa was through a scatter plot matrix that displays sales, bottles sold, and volume in liters sold by date.
+I compared the graphs by year and while there are slight differences, especially in terms of outliers, 2020 clearly showed an increase in the variety of bottles sold while 2016 and 2018 kept it consistent with the 6-packs.
+It seems that due to COVID-19, people were likely trying to stock up on alcohol sales which explains the change in volume and bottles sold.
+Personally, I would have assumed that the number of sales increased for 2020 however it actually decreased which was surprising.
